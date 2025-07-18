@@ -1,6 +1,4 @@
 # browser
-A Go package that provides a wrapper for headless browser interactions
-# browser
 
 O pacote `browser` fornece uma abstração de alto nível para automação de navegação web utilizando o [chromedp](https://github.com/chromedp/chromedp) em Go. Ele permite visitar páginas, extrair documentos HTML, interagir com elementos do DOM, aguardar elementos específicos, clicar em elementos e executar funções personalizadas sobre nós do DOM.
 
@@ -19,30 +17,22 @@ O objetivo deste pacote é facilitar a automação de tarefas em navegadores, co
 - **Executar funções customizadas**: Permite executar funções sobre nós do DOM encontrados.
 - **Configurar timeout**: Permite definir o tempo máximo de espera para operações do navegador.
 
-## Exemplo de Uso
+## Sobre o Status Code
+
+O método `Visit` retorna o código de status HTTP (`StatusCode`) da resposta ao navegar para a URL desejada.  
+**A decisão sobre como tratar códigos de status diferentes de 200 é responsabilidade do usuário da API.**  
+O pacote não gera erro automaticamente para códigos de status diferentes de 200, permitindo flexibilidade para diferentes cenários de uso, como scraping de páginas 404 ou análise de respostas específicas.
+
+Exemplo de uso recomendado:
 
 ```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "log"
-
-    "github.com/chromedp/chromedp"
-    "seuprojeto/browser"
-)
-
-func main() {
-    ctx, cancel := chromedp.NewContext(context.Background())
-    defer cancel()
-
-    b := browser.NewBrowser()
-
-    status, err := b.Visit(ctx, "https://exemplo.com")
-    if err != nil {
-        log.Fatalf("Erro ao visitar página: %v", err)
-    }
-    fmt.Printf("Status: %d\n", status)
-    fmt.Println("HTML:", b.GetDocument())
+status, err := browser.Visit(ctx, "https://exemplo.com")
+if err != nil {
+    log.Fatalf("Erro ao visitar página: %v", err)
 }
+if status != 200 {
+    log.Printf("Atenção: status HTTP diferente de 200: %d", status)
+}
+// Processar o documento normalmente
+doc := browser.GetDocument()
+```

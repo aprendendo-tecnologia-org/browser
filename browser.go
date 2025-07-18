@@ -8,12 +8,16 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/network"
 )
+
+type StatusCode int
 
 // Browser represents a high-level browser abstraction over chromedp
 type Browser struct {
 	document   string
 	currentURL string
+	statusCode StatusCode
 	timeout    time.Duration
 }
 
@@ -44,25 +48,28 @@ func NewBrowserWithOptions(headless bool, timeout time.Duration) *Browser {
 }
 
 // Visit navigates to the given URL and extracts the HTML document
-func (b *Browser) Visit(ctx context.Context, url string) error {
-		
+func (b *Browser) Visit(ctx context.Context, url string) (StatusCode, error) {
+	
+	b.listenForNetworkEvent(ctx)
+
 	// Navigate to URL and get HTML
 	var htmlContent string
 	err := chromedp.Run(ctx,
+		network.Enable(),
 		chromedp.Navigate(url),
 		chromedp.WaitVisible("body", chromedp.ByQuery),
 		chromedp.OuterHTML("html", &htmlContent, chromedp.ByQuery),
 	)
 	
 	if err != nil {
-		return fmt.Errorf("failed to visit %s: %w", url, err)
+		return 500, fmt.Errorf("failed to visit %s: %w", url, err)
 	}
 	
 	// Store the document and current URL
 	b.document = htmlContent
 	b.currentURL = url
 	
-	return nil
+	return b.statusCode, nil
 }
 
 // GetDocument returns the current HTML document
@@ -242,3 +249,13 @@ func (b *Browser) SetTimeout(timeout time.Duration) {
 // 		fmt.Printf("Screenshot size: %d bytes\n", len(screenshot))
 // 	}
 // }
+func (b *Browser) listenForNetworkEvent(ctx context.Context) {
+    chromedp.ListenTarget(ctx, func(ev interface{}) {
+        switch ev := ev.(type) {
+        case *network.EventResponseReceived:
+            resp := ev.Response
+            b.statusCode = StatusCode(resp.Status)
+			fmt.Printf("Response received: URL=%s, Status=%d\n", resp.URL, resp.Status)
+        }
+    })
+}
