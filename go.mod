@@ -1,4 +1,4 @@
-module com.github/aprendendo-tecnologia-org/browser
+module github.com/aprendendo-tecnologia-org/browser
 
 go 1.23.0
 
