@@ -138,7 +138,7 @@ import (
     "fmt"
     "log"
     "github.com/chromedp/chromedp"
-    "github.com/seuprojeto/browser"
+    "com.github/aprendendo-tecnologia-org/browser"
 )
 
 func main() {
@@ -197,7 +197,7 @@ func main() {
 Para instalar o pacote, utilize o comando:
 
 ```sh
-go get github.com/seuprojeto/browser
+go get com.github/aprendendo-tecnologia-org/browser
 ```
 
 Certifique-se também de instalar o [chromedp](https://github.com/chromedp/chromedp) como dependência, caso ainda não esteja presente no seu projeto:
@@ -209,5 +209,5 @@ go get github.com/chromedp/chromedp
 Inclua o import no seu código Go:
 
 ```go
-import "github.com/seuprojeto/browser"
+import "com.github/aprendendo-tecnologia-org/browser"
 ```
