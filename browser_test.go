@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
@@ -268,5 +269,64 @@ func TestBrowser_Click_LongOperationCreatesElement(t *testing.T) {
 	doc := b.GetDocument()
 	if !contains(doc, "Elemento criado!") {
 		t.Errorf("Expected created element text not found in document")
+	}
+}
+
+func TestBrowser_Exec_ExtractLinks(t *testing.T) {
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	const html = `
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <a href="https://site1.com" class="external">Site 1</a>
+            <a href="https://site2.com" class="external">Site 2</a>
+            <a href="/internal" class="internal">Internal</a>
+        </body>
+        </html>
+    `
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, html)
+	}))
+	defer server.Close()
+
+	b := NewBrowser()
+	_, err := b.Visit(ctx, server.URL)
+	if err != nil {
+		t.Fatalf("Visit() error = %v", err)
+	}
+
+	var foundLinks []string
+	err = b.Exec(ctx, "a.external", func(nodes []*cdp.Node) {
+		for _, node := range nodes {
+			for i := 0; i < len(node.Attributes); i += 2 {
+				if node.Attributes[i] == "href" {
+					foundLinks = append(foundLinks, node.Attributes[i+1])
+				}
+			}
+		}
+	})
+	if err != nil {
+		t.Fatalf("Exec() error = %v", err)
+	}
+
+	expected := []string{"https://site1.com", "https://site2.com"}
+	if len(foundLinks) != len(expected) {
+		t.Errorf("Expected %d links, got %d", len(expected), len(foundLinks))
+	}
+	for _, want := range expected {
+		found := false
+		for _, got := range foundLinks {
+			if got == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected link %q not found in results: %v", want, foundLinks)
+		}
 	}
 }
