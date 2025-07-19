@@ -11,8 +11,6 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-var browser = NewBrowser()
-
 // func TestBrowser_GetDocument(t *testing.T) {
 
 // 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -50,43 +48,94 @@ var browser = NewBrowser()
 // 	}
 // }
 
-// func TestBrowser_GetNodes(t *testing.T) {
+func TestBrowser_GetNodes(t *testing.T) {
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
 
-// 	ctx, cancel := chromedp.NewContext(context.Background())
-// 	defer cancel()
+	tests := []struct {
+		name        string
+		html        string
+		selector    string
+		wantCount   int
+		wantContent string
+	}{
+		{
+			name: "Simple single node",
+			html: `
+                <!DOCTYPE html>
+                <html>
+                <body>
+                    <div id="unique">Hello Node</div>
+                </body>
+                </html>
+            `,
+			selector:    "#unique",
+			wantCount:   1,
+			wantContent: "Hello Node",
+		},
+		{
+			name: "Multiple product items",
+			html: `
+                <!DOCTYPE html>
+                <html>
+                <body>
+                    <ul>
+                        <li class="product">Produto A</li>
+                        <li class="product">Produto B</li>
+                        <li class="product">Produto C</li>
+                    </ul>
+                </body>
+                </html>
+            `,
+			selector:    ".product",
+			wantCount:   3,
+			wantContent: "Produto B",
+		},
+	}
 
-// 	tests := []struct {
-// 		name     string
-// 		browser  *Browser
-// 		selector string
-// 		want     string
-// 	}{
-// 		{"Get foo", browser, `a.product-detail`, "placa de video"}, // TODO: Add test cases.
-// 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html")
+				fmt.Fprint(w, tt.html)
+			}))
+			defer server.Close()
 
-// 	server := serve("placa-video.html")
-// 	defer server.Close()
+			b := NewBrowser()
+			_, err := b.Visit(ctx, server.URL)
+			if err != nil {
+				t.Fatalf("Visit() error = %v", err)
+			}
 
-// 	for _, tt := range tests {
+			nodes, err := b.GetNodes(ctx, tt.selector)
+			if err != nil {
+				t.Fatalf("GetNodes() error = %v", err)
+			}
+			if len(nodes) != tt.wantCount {
+				t.Errorf("GetNodes() count = %d, want %d", len(nodes), tt.wantCount)
+			}
+			// Check if any node contains the expected content
+			found := false
+			for _, node := range nodes {
+				if node.NodeValue == tt.wantContent {
+					found = true
+					break
+				}
+				// Sometimes NodeValue is empty and text is in children
+				for _, child := range node.Children {
+					if child.NodeValue == tt.wantContent {
+						found = true
+						break
+					}
+				}
+			}
+			if tt.wantContent != "" && !found {
+				t.Errorf("GetNodes() did not find node with content %q", tt.wantContent)
+			}
+		})
+	}
+}
 
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			err := tt.browser.Visit(ctx, server.URL)
-// 			if err != nil {
-// 				t.Errorf("Browser.Visit( %s ) = %v", server.URL, err)
-// 			}
-
-// 			nodes, err := tt.browser.GetNodes(ctx, tt.selector)
-// 			if err != nil {
-// 				t.Errorf("Browser.WaitForElement( %s ) = %v", tt.selector, err)
-// 			}
-
-//				if len(nodes) == 0 {
-//					t.Errorf("Browser.GetNodes() = %v, want at least one node", nodes)
-//				}
-//				fmt.Printf("First node text: %s", nodes[0].Children[0].NodeValue)
-//			})
-//		}
-//	}
 func TestBrowser_Visit(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
