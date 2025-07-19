@@ -138,7 +138,7 @@ import (
     "fmt"
     "log"
     "github.com/chromedp/chromedp"
-    "seuprojeto/browser"
+    "github.com/seuprojeto/browser"
 )
 
 func main() {
@@ -190,4 +190,12 @@ func main() {
         // ... repetir extração se necessário
     }
 }
+```
+
+## Instalação
+
+Para instalar o pacote, utilize o comando:
+
+```sh
+go get github.com/seuprojeto/browser
 ```
