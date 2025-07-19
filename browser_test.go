@@ -80,13 +80,13 @@ var browser = NewBrowser()
 // 				t.Errorf("Browser.WaitForElement( %s ) = %v", tt.selector, err)
 // 			}
 
-// 			if len(nodes) == 0 {
-// 				t.Errorf("Browser.GetNodes() = %v, want at least one node", nodes)
-// 			}
-// 			fmt.Printf("First node text: %s", nodes[0].Children[0].NodeValue)
-// 		})
-// 	}
-// }
+//				if len(nodes) == 0 {
+//					t.Errorf("Browser.GetNodes() = %v, want at least one node", nodes)
+//				}
+//				fmt.Printf("First node text: %s", nodes[0].Children[0].NodeValue)
+//			})
+//		}
+//	}
 func TestBrowser_Visit(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
@@ -135,7 +135,7 @@ func TestBrowser_Visit(t *testing.T) {
 			doc := tt.browser.GetDocument()
 			if tt.wantStatus == 200 && !contains(doc, tt.wantContent) {
 				t.Errorf("Visit() document does not contain %q", tt.wantContent)
-			}			
+			}
 		})
 	}
 }
@@ -170,4 +170,54 @@ func getHTMLFromFile(file string) (string, error) {
 		return "", err
 	}
 	return string(fileContent), nil
+}
+
+func TestBrowser_Click_LongOperationCreatesElement(t *testing.T) {
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// HTML with a button and a container div. Clicking the button waits 1s and adds a new element.
+	const html = `
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <button id="createBtn" onclick="setTimeout(function() {
+                var el = document.createElement('span');
+                el.id = 'created';
+                el.textContent = 'Elemento criado!';
+                document.getElementById('container').appendChild(el);
+            }, 1200);">Criar elemento</button>
+            <div id="container"></div>
+        </body>
+        </html>
+    `
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, html)
+	}))
+	defer server.Close()
+
+	b := NewBrowser()
+	_, err := b.Visit(ctx, server.URL)
+	if err != nil {
+		t.Fatalf("Visit() error = %v", err)
+	}
+
+	// Click the button that triggers the long operation
+	err = b.Click(ctx, "#createBtn")
+	if err != nil {
+		t.Fatalf("Click() error = %v", err)
+	}
+
+	// Wait for the new element to appear in the DOM
+	err = b.WaitForElement(ctx, "#created")
+	if err != nil {
+		t.Fatalf("WaitForElement() error = %v", err)
+	}
+
+	doc := b.GetDocument()
+	if !contains(doc, "Elemento criado!") {
+		t.Errorf("Expected created element text not found in document")
+	}
 }
