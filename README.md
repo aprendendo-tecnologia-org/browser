@@ -41,3 +41,153 @@ if err != nil {
 fmt.Printf("Status: %d\n", status)
 fmt.Println("HTML:", b.GetDocument())
 ```
+
+### 2. Usando um servidor de teste para fornecer HTML
+
+```go
+const html = `
+    <html><body>
+        <div id="unique">Hello Node</div>
+        <ul>
+            <li class="product">Produto A</li>
+            <li class="product">Produto B</li>
+        </ul>
+    </body></html>
+`
+server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/html")
+    fmt.Fprint(w, html)
+}))
+defer server.Close()
+
+b := browser.NewBrowser()
+b.Visit(ctx, server.URL)
+nodes, err := b.GetNodes(ctx, ".product")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Encontrados %d produtos\n", len(nodes))
+```
+
+### 3. Interagindo com elementos e aguardando alterações no DOM
+
+```go
+const html = `
+    <html><body>
+        <button id="createBtn" onclick="setTimeout(function() {
+            var el = document.createElement('span');
+            el.id = 'created';
+            el.textContent = 'Elemento criado!';
+            document.getElementById('container').appendChild(el);
+        }, 1200);">Criar elemento</button>
+        <div id="container"></div>
+    </body></html>
+`
+server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/html")
+    fmt.Fprint(w, html)
+}))
+defer server.Close()
+
+b := browser.NewBrowser()
+b.Visit(ctx, server.URL)
+b.Click(ctx, "#createBtn")
+b.WaitForElement(ctx, "#created")
+doc := b.GetDocument()
+fmt.Println("Documento após clique:", doc)
+```
+
+### 4. Extraindo links externos de uma página
+
+```go
+const html = `
+    <html><body>
+        <a href="https://site1.com" class="external">Site 1</a>
+        <a href="https://site2.com" class="external">Site 2</a>
+        <a href="/internal" class="internal">Internal</a>
+    </body></html>
+`
+server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/html")
+    fmt.Fprint(w, html)
+}))
+defer server.Close()
+
+b := browser.NewBrowser()
+b.Visit(ctx, server.URL)
+var foundLinks []string
+b.Exec(ctx, "a.external", func(nodes []*cdp.Node) {
+    for _, node := range nodes {
+        for i := 0; i < len(node.Attributes); i += 2 {
+            if node.Attributes[i] == "href" {
+                foundLinks = append(foundLinks, node.Attributes[i+1])
+            }
+        }
+    }
+})
+fmt.Printf("Links externos encontrados: %v\n", foundLinks)
+```
+
+### 5. Exemplo Prático de Uso do Pacote
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+    "github.com/chromedp/chromedp"
+    "seuprojeto/browser"
+)
+
+func main() {
+    ctx, cancel := chromedp.NewContext(context.Background())
+    defer cancel()
+
+    b := browser.NewBrowser()
+    status, err := b.Visit(ctx, "https://exemplo.com/produtos")
+    if err != nil {
+        log.Fatalf("Erro ao visitar página: %v", err)
+    }
+    if status != 200 {
+        log.Fatalf("Status HTTP inesperado: %d", status)
+    }
+
+    // Aguarda a lista de produtos aparecer
+    if err := b.WaitForElement(ctx, ".product"); err != nil {
+        log.Fatalf("Produto não encontrado: %v", err)
+    }
+
+    // Extrai nomes dos produtos
+    var produtos []string
+    err = b.Exec(ctx, ".product", func(nodes []*cdp.Node) {
+        for _, node := range nodes {
+            if node.NodeValue != "" {
+                produtos = append(produtos, node.NodeValue)
+            } else {
+                // Busca em filhos se necessário
+                for _, child := range node.Children {
+                    if child.NodeValue != "" {
+                        produtos = append(produtos, child.NodeValue)
+                    }
+                }
+            }
+        }
+    })
+    if err != nil {
+        log.Fatalf("Erro ao extrair produtos: %v", err)
+    }
+
+    fmt.Println("Produtos encontrados:")
+    for _, nome := range produtos {
+        fmt.Println("-", nome)
+    }
+
+    // Exemplo: clicar em um botão para carregar mais produtos
+    if err := b.Click(ctx, "#loadMore"); err == nil {
+        b.WaitForElement(ctx, ".product.new")
+        // ... repetir extração se necessário
+    }
+}
+```
