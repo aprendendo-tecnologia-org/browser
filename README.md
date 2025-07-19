@@ -199,3 +199,15 @@ Para instalar o pacote, utilize o comando:
 ```sh
 go get github.com/seuprojeto/browser
 ```
+
+Certifique-se também de instalar o [chromedp](https://github.com/chromedp/chromedp) como dependência, caso ainda não esteja presente no seu projeto:
+
+```sh
+go get github.com/chromedp/chromedp
+```
+
+Inclua o import no seu código Go:
+
+```go
+import "github.com/seuprojeto/browser"
+```
