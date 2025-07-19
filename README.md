@@ -23,16 +23,21 @@ O método `Visit` retorna o código de status HTTP (`StatusCode`) da resposta ao
 **A decisão sobre como tratar códigos de status diferentes de 200 é responsabilidade do usuário da API.**  
 O pacote não gera erro automaticamente para códigos de status diferentes de 200, permitindo flexibilidade para diferentes cenários de uso, como scraping de páginas 404 ou análise de respostas específicas.
 
-Exemplo de uso recomendado:
+---
+
+## Exemplos de Uso
+
+### 1. Visitando uma página e obtendo o HTML
 
 ```go
-status, err := browser.Visit(ctx, "https://exemplo.com")
+ctx, cancel := chromedp.NewContext(context.Background())
+defer cancel()
+
+b := browser.NewBrowser()
+status, err := b.Visit(ctx, "https://exemplo.com")
 if err != nil {
     log.Fatalf("Erro ao visitar página: %v", err)
 }
-if status != 200 {
-    log.Printf("Atenção: status HTTP diferente de 200: %d", status)
-}
-// Processar o documento normalmente
-doc := browser.GetDocument()
+fmt.Printf("Status: %d\n", status)
+fmt.Println("HTML:", b.GetDocument())
 ```
