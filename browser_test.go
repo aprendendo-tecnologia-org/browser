@@ -12,43 +12,6 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-// func TestBrowser_GetDocument(t *testing.T) {
-
-// 	ctx, cancel := chromedp.NewContext(context.Background())
-// 	defer cancel()
-
-// 	tests := []struct {
-// 		name     string
-// 		browser  *Browser
-// 		selector string
-// 		want     string
-// 	}{
-// 		{"Get foo", browser, `#name`, "placa de video"}, // TODO: Add test cases.
-// 	}
-
-// 	server := serve("placa-video.html")
-// 	defer server.Close()
-
-// 	for _, tt := range tests {
-
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			err := tt.browser.Visit(ctx, server.URL)
-// 			if err != nil {
-// 				t.Errorf("Browser.Visit( %s ) = %v", server.URL, err)
-// 			}
-
-// 			err = tt.browser.WaitForElement(ctx, tt.selector)
-// 			if err != nil {
-// 				t.Errorf("Browser.WaitForElement( %s ) = %v", tt.selector, err)
-// 			}
-
-// 			if got := tt.browser.GetDocument(); got != tt.want {
-// 				t.Errorf("Browser.GetDocument() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
-
 func TestBrowser_GetNodes(t *testing.T) {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
