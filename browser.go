@@ -93,8 +93,11 @@ func (b *Browser) WaitForElement(ctx context.Context, selector string) error {
 		return fmt.Errorf("context error: %w", ctx.Err())
 	}
 
+	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
+	defer cancel()
+
 	var htmlContent string
-	err := chromedp.Run(ctx,
+	err := chromedp.Run(timeoutCtx,
 		chromedp.WaitVisible(selector, chromedp.ByQuery),
 		chromedp.OuterHTML("html", &htmlContent, chromedp.ByQuery),
 	)
