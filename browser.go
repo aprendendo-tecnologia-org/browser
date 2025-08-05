@@ -130,7 +130,8 @@ func (b *Browser) Click(ctx context.Context, selector string) error {
 	var htmlContent string
 	err := chromedp.Run(ctx,
 		chromedp.Click(selector, chromedp.ByQuery),
-		chromedp.Sleep(1*time.Second), // Wait for potential changes
+		//chromedp.Sleep(1*time.Second), // Wait for potential changes
+		chromedp.WaitReady("body", chromedp.NodeReady),
 		chromedp.OuterHTML("html", &htmlContent, chromedp.ByQuery),
 	)
 	
