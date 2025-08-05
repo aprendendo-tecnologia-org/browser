@@ -98,7 +98,7 @@ func (b *Browser) WaitForElement(ctx context.Context, selector string) error {
 
 	var htmlContent string
 	err := chromedp.Run(timeoutCtx,
-		chromedp.WaitVisible(selector, chromedp.ByQuery),
+		chromedp.WaitVisible(selector, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.OuterHTML("html", &htmlContent, chromedp.ByQuery),
 	)
 	
