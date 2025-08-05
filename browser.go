@@ -255,7 +255,7 @@ func (b *Browser) listenForNetworkEvent(ctx context.Context) {
         case *network.EventResponseReceived:
             resp := ev.Response
             b.statusCode = StatusCode(resp.Status)
-			fmt.Printf("Response received: URL=%s, Status=%d\n", resp.URL, resp.Status)
+			//fmt.Printf("Response received: URL=%s, Status=%d\n", resp.URL, resp.Status)
         }
     })
 }
