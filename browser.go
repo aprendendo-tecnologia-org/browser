@@ -50,14 +50,14 @@ func NewBrowserWithOptions(headless bool, timeout time.Duration) *Browser {
 // Visit navigates to the given URL and extracts the HTML document
 func (b *Browser) Visit(ctx context.Context, url string) (StatusCode, error) {
 	
-	b.listenForNetworkEvent(ctx)
+	//b.listenForNetworkEvent(ctx)
 
 	// Navigate to URL and get HTML
 	var htmlContent string
 	err := chromedp.Run(ctx,
 		network.Enable(),
 		chromedp.Navigate(url),
-		chromedp.WaitVisible("body", chromedp.ByQuery),
+		chromedp.WaitVisible("body", chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.OuterHTML("html", &htmlContent, chromedp.ByQuery),
 	)
 	
@@ -69,7 +69,8 @@ func (b *Browser) Visit(ctx context.Context, url string) (StatusCode, error) {
 	b.document = htmlContent
 	b.currentURL = url
 	
-	return b.statusCode, nil
+	//return b.statusCode, nil
+	return 200, nil
 }
 
 // GetDocument returns the current HTML document
